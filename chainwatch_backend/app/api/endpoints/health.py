@@ -1,9 +1,9 @@
-# app/api/endpoints/health.py - Health Check and System Status API
+# app/api/endpoints/health.py - Fixed Health Check
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 import aiohttp
 import asyncio
-from sqlalchemy import text
+from sqlalchemy import text  # Import text
 from app.models.schemas import HealthCheck, APIResponse
 from app.core.config import settings
 from app.core.database import get_db, AsyncSession
@@ -18,9 +18,9 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     services = {}
     overall_status = "healthy"
     
-    # Check database
+    # Check database (FIXED)
     try:
-        await db.execute("SELECT 1")
+        await db.execute(text("SELECT 1"))  # Use text() wrapper
         services["database"] = "healthy"
     except Exception as e:
         services["database"] = f"unhealthy: {str(e)}"
@@ -30,7 +30,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
             async with session.get(
-                f"{settings.BITSCRUNCH_BASE_URL}/blockchains",
+                f"{settings.BITSCRUNCH_BASE_URL}/nft/collection/analytics?blockchain=ethereum&limit=1",
                 headers={"x-api-key": settings.BITSCRUNCH_API_KEY}
             ) as response:
                 if response.status == 200:
@@ -112,12 +112,18 @@ async def ping():
     )
 
 @router.post("/test/telegram", response_model=APIResponse)
-async def test_telegram_integration(
-    chat_id: str,
-    message: str = "🤖 ChainWatch Test Message - Integration working correctly!"
-):
+async def test_telegram_integration(payload: dict):
     """Test Telegram integration by sending a message"""
     try:
+        chat_id = payload.get("chat_id")
+        message = payload.get("message", "🤖 ChainWatch Test Message - Integration working correctly!")
+        
+        if not chat_id:
+            return APIResponse(
+                success=False,
+                message="chat_id is required"
+            )
+        
         dispatcher = ActionDispatcher()
         result = await dispatcher.send_test_message(chat_id, message)
         
@@ -145,7 +151,6 @@ async def get_config_info():
         data={
             "environment": settings.ENVIRONMENT,
             "debug_mode": settings.DEBUG,
-            "supported_blockchains": list(settings.SUPPORTED_BLOCKCHAINS.keys()) if hasattr(settings, 'SUPPORTED_BLOCKCHAINS') else [],
             "rate_limiting_enabled": settings.ENABLE_RATE_LIMITING,
             "agent_check_interval": settings.AGENT_CHECK_INTERVAL,
             "max_concurrent_agents": settings.MAX_CONCURRENT_AGENTS,

@@ -1,4 +1,4 @@
-# app/agents/mission_parser.py - AI-Powered Mission Parser
+# app/agents/mission_parser.py - Fixed Mission Parser
 import json
 import logging
 import re
@@ -78,13 +78,15 @@ class MissionParser:
 You are an expert blockchain monitoring system. Convert the user's natural language mission into a structured JSON plan.
 
 SUPPORTED BLOCKCHAINS: {list(SUPPORTED_BLOCKCHAINS.keys())}
-SUPPORTED ACTION TYPES: wallet_monitor, nft_monitor, collection_monitor, transaction_monitor
+SUPPORTED ACTION TYPES: wallet_monitor, nft_monitor, collection_monitor
+
+IMPORTANT: You can ONLY use these 3 action types. Do NOT create new action types like "transaction_monitor".
 
 RESPONSE FORMAT (JSON only, no other text):
 {{
-    "action_type": "wallet_monitor|nft_monitor|collection_monitor|transaction_monitor",
+    "action_type": "wallet_monitor|nft_monitor|collection_monitor",
     "target": {{
-        "type": "wallet|nft|collection|transaction",
+        "type": "wallet|nft|collection",
         "address": "wallet_address_or_contract_address",
         "token_id": "token_id_if_specific_nft",
         "collection_name": "human_readable_collection_name"
@@ -92,7 +94,7 @@ RESPONSE FORMAT (JSON only, no other text):
     "conditions": [
         {{
             "type": "threshold|change|pattern|detection",
-            "parameter": "volume|price|transfer|activity",
+            "parameter": "volume|price|outgoing_transfer|incoming_transfer|washtrade_activity",
             "operator": "gt|lt|eq|contains",
             "value": "threshold_value",
             "timeframe": "1h|24h|7d|30d"
@@ -100,7 +102,7 @@ RESPONSE FORMAT (JSON only, no other text):
     ],
     "blockchain": "ethereum|polygon|avalanche|bsc|linea|solana",
     "parameters": {{
-        "currency": "usd|eth",
+        "currency": "usd|eth|usdt",
         "include_washtrade": false,
         "min_value_usd": 0,
         "alert_frequency": "immediate|daily|weekly"
@@ -130,8 +132,32 @@ Response:
     "parameters": {{
         "currency": "eth",
         "min_value_usd": 0,
-        "alert_frequency": "immediate",
-        "filter_new_addresses": true
+        "alert_frequency": "immediate"
+    }}
+}}
+
+Mission: "Alert me if any wallet sends more than 1000 USDT in a single transaction"
+Response:
+{{
+    "action_type": "wallet_monitor",
+    "target": {{
+        "type": "wallet",
+        "address": "ANY_WALLET"
+    }},
+    "conditions": [
+        {{
+            "type": "threshold",
+            "parameter": "outgoing_transfer",
+            "operator": "gt",
+            "value": "1000",
+            "timeframe": "24h"
+        }}
+    ],
+    "blockchain": "ethereum",
+    "parameters": {{
+        "currency": "usdt",
+        "min_value_usd": 0,
+        "alert_frequency": "immediate"
     }}
 }}
 
@@ -190,6 +216,8 @@ Response:
 Now parse this mission:
 Mission: "{mission_prompt}"
 
+REMEMBER: Only use wallet_monitor, nft_monitor, or collection_monitor as action_type.
+
 Respond with ONLY the JSON structure, no additional text:
 """
         return prompt
@@ -230,9 +258,9 @@ Respond with ONLY the JSON structure, no additional text:
                     return {"valid": False, "error": f"Missing required field: {field}"}
             
             # Validate action_type
-            valid_action_types = ["wallet_monitor", "nft_monitor", "collection_monitor", "transaction_monitor"]
+            valid_action_types = ["wallet_monitor", "nft_monitor", "collection_monitor"]
             if plan["action_type"] not in valid_action_types:
-                return {"valid": False, "error": f"Invalid action_type: {plan['action_type']}"}
+                return {"valid": False, "error": f"Invalid action_type: {plan['action_type']}. Must be one of: {valid_action_types}"}
             
             # Validate blockchain
             if plan["blockchain"] not in SUPPORTED_BLOCKCHAINS:
