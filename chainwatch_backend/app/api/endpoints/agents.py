@@ -1,4 +1,4 @@
-# app/api/endpoints/agents.py - Agent Management API
+# app/api/endpoints/agents.py - Agent Management API (Production Clean)
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, desc
@@ -7,8 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db, AsyncSession, Agent, User, get_user_by_telegram_id, create_user
 from app.models.schemas import (
     AgentCreate, Agent as AgentSchema, AgentWithUser, AgentUpdate,
-    APIResponse, PaginatedResponse, MissionParseRequest, MissionParseResponse,
-    DemoMissionExamples
+    APIResponse, PaginatedResponse, MissionParseRequest, MissionParseResponse
 )
 from app.agents.mission_parser import MissionParser
 from app.core.scheduler import AgentScheduler
@@ -291,11 +290,6 @@ async def parse_mission(request: MissionParseRequest):
             success=False,
             error=f"Mission parsing failed: {str(e)}"
         )
-
-@router.get("/demo/missions", response_model=DemoMissionExamples)
-async def get_demo_missions():
-    """Get example missions for demo purposes"""
-    return DemoMissionExamples()
 
 @router.get("/stats", response_model=APIResponse)
 async def get_scheduler_stats(scheduler: AgentScheduler = Depends(get_scheduler)):

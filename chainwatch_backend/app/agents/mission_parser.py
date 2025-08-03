@@ -1,4 +1,4 @@
-# app/agents/mission_parser.py - Fixed Mission Parser
+# app/agents/mission_parser.py - AI Mission Parser
 import json
 import logging
 import re
@@ -61,7 +61,7 @@ class MissionParser:
             return MissionParseResponse(
                 success=True,
                 structured_plan=plan_model,
-                confidence=0.85  # Could be improved with confidence scoring
+                confidence=0.85
             )
             
         except Exception as e:
@@ -80,7 +80,7 @@ You are an expert blockchain monitoring system. Convert the user's natural langu
 SUPPORTED BLOCKCHAINS: {list(SUPPORTED_BLOCKCHAINS.keys())}
 SUPPORTED ACTION TYPES: wallet_monitor, nft_monitor, collection_monitor
 
-IMPORTANT: You can ONLY use these 3 action types. Do NOT create new action types like "transaction_monitor".
+IMPORTANT: You can ONLY use these 3 action types.
 
 RESPONSE FORMAT (JSON only, no other text):
 {{
@@ -109,114 +109,8 @@ RESPONSE FORMAT (JSON only, no other text):
     }}
 }}
 
-EXAMPLES:
-
-Mission: "Alert me if wallet 0x742d35Cc6bf8e1d6D8aEc8967c96e5e5E2DbDcf5 sends more than 5 ETH to any new address"
-Response:
-{{
-    "action_type": "wallet_monitor",
-    "target": {{
-        "type": "wallet",
-        "address": "0x742d35Cc6bf8e1d6D8aEc8967c96e5e5E2DbDcf5"
-    }},
-    "conditions": [
-        {{
-            "type": "threshold",
-            "parameter": "outgoing_transfer",
-            "operator": "gt",
-            "value": "5",
-            "timeframe": "24h"
-        }}
-    ],
-    "blockchain": "ethereum",
-    "parameters": {{
-        "currency": "eth",
-        "min_value_usd": 0,
-        "alert_frequency": "immediate"
-    }}
-}}
-
-Mission: "Alert me if any wallet sends more than 1000 USDT in a single transaction"
-Response:
-{{
-    "action_type": "wallet_monitor",
-    "target": {{
-        "type": "wallet",
-        "address": "ANY_WALLET"
-    }},
-    "conditions": [
-        {{
-            "type": "threshold",
-            "parameter": "outgoing_transfer",
-            "operator": "gt",
-            "value": "1000",
-            "timeframe": "24h"
-        }}
-    ],
-    "blockchain": "ethereum",
-    "parameters": {{
-        "currency": "usdt",
-        "min_value_usd": 0,
-        "alert_frequency": "immediate"
-    }}
-}}
-
-Mission: "Monitor Bored Ape Yacht Club for wash trading and alert if detected"
-Response:
-{{
-    "action_type": "collection_monitor",
-    "target": {{
-        "type": "collection",
-        "address": "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D",
-        "collection_name": "Bored Ape Yacht Club"
-    }},
-    "conditions": [
-        {{
-            "type": "detection",
-            "parameter": "washtrade_activity",
-            "operator": "gt",
-            "value": "0.1",
-            "timeframe": "24h"
-        }}
-    ],
-    "blockchain": "ethereum",
-    "parameters": {{
-        "currency": "usd",
-        "include_washtrade": true,
-        "alert_frequency": "daily"
-    }}
-}}
-
-Mission: "Alert me if any CryptoPunk is sold for less than 10 ETH"
-Response:
-{{
-    "action_type": "collection_monitor",
-    "target": {{
-        "type": "collection",
-        "address": "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB",
-        "collection_name": "CryptoPunks"
-    }},
-    "conditions": [
-        {{
-            "type": "threshold",
-            "parameter": "sale_price",
-            "operator": "lt",
-            "value": "10",
-            "timeframe": "24h"
-        }}
-    ],
-    "blockchain": "ethereum",
-    "parameters": {{
-        "currency": "eth",
-        "min_value_usd": 0,
-        "alert_frequency": "immediate"
-    }}
-}}
-
 Now parse this mission:
 Mission: "{mission_prompt}"
-
-REMEMBER: Only use wallet_monitor, nft_monitor, or collection_monitor as action_type.
 
 Respond with ONLY the JSON structure, no additional text:
 """
@@ -287,41 +181,3 @@ Respond with ONLY the JSON structure, no additional text:
             
         except Exception as e:
             return {"valid": False, "error": f"Validation error: {str(e)}"}
-
-# Demo mission examples for testing
-DEMO_MISSIONS = [
-    "Alert me if wallet 0x742d35Cc6bf8e1d6D8aEc8967c96e5e5E2DbDcf5 sends more than 5 ETH to any new address",
-    "Monitor Bored Ape Yacht Club for wash trading and alert if detected",
-    "Alert me if any CryptoPunk is sold for less than 10 ETH",
-    "Watch wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 for any NFT purchases over $1000",
-    "Monitor Pudgy Penguins collection for unusual trading volume spikes",
-    "Alert me if Azuki collection shows price manipulation patterns",
-    "Track wallet 0x50de6856358cc35f3a9a57eaaa34bd4cb707d2cd for suspicious activity",
-    "Monitor Art Blocks Curated for any pieces being flipped within 24 hours"
-]
-
-# Helper function for testing
-async def test_mission_parser():
-    """Test function for mission parser"""
-    parser = MissionParser()
-    
-    for mission in DEMO_MISSIONS[:3]:  # Test first 3 missions
-        print(f"\n{'='*60}")
-        print(f"Testing: {mission}")
-        print(f"{'='*60}")
-        
-        result = await parser.parse_mission(mission)
-        
-        if result.success:
-            print("✅ SUCCESS")
-            print(f"Action Type: {result.structured_plan.action_type}")
-            print(f"Target: {result.structured_plan.target}")
-            print(f"Conditions: {result.structured_plan.conditions}")
-            print(f"Blockchain: {result.structured_plan.blockchain}")
-        else:
-            print("❌ FAILED")
-            print(f"Error: {result.error}")
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(test_mission_parser())
