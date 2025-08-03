@@ -5,6 +5,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timedelta
 import logging
 from app.core.config import settings
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 

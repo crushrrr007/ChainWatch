@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 import aiohttp
 import asyncio
-
+from sqlalchemy import text
 from app.models.schemas import HealthCheck, APIResponse
 from app.core.config import settings
 from app.core.database import get_db, AsyncSession

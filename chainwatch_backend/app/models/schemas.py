@@ -42,7 +42,7 @@ class AgentStructuredPlan(BaseModel):
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Additional parameters")
 
 class AgentUpdate(BaseModel):
-    status: Optional[str] = Field(None, regex="^(active|paused|triggered|error)$")
+    status: Optional[str] = Field(None, pattern="^(active|paused|triggered|error)$")
     schedule_interval: Optional[int] = Field(None, ge=60, le=3600)
     agent_name: Optional[str] = Field(None, max_length=100)
 
@@ -74,7 +74,7 @@ class AlertCreate(BaseModel):
     report_content: str
     raw_data: Optional[Dict[str, Any]] = None
     alert_type: str
-    severity: str = Field(default="medium", regex="^(low|medium|high|critical)$")
+    severity: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
 
 class Alert(BaseModel):
     id: int
